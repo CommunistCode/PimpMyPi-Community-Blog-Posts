@@ -1,0 +1,170 @@
+Building a Custom Raspberry Pi Image using OpenEmbedded and Yocto
+
+You may have read my previous article where I talked about building a virtual image to run in qemu which was similar to the Raspberry Pi's architecture and allowed for basic development. In that I mentioned that hopefully support for the real raspberry pi hardware would eventually be included, and it now is!
+
+With the development of the Raspberry Pi hardware layer being spear headed by DJWillis ([url=http://www.distant-earth.com/wp/]http://www.distant-earth.com/wp/[/url]) and other generous members of the community, it is now possible to build a custom embedded image with full architecture support.
+
+In this post I will describe how to build an image for the Raspberry Pi using the meta-raspberrypi BSP (Board Support Package) layer, the OpenEmbedded build framework and the Poky (Yocto Project Supported) distro.
+
+OpenEmbedded is an open source build system which helps create custom Linux based systems for embedded products. It provides a complete embedded Linux build environment with tools (Bitbake application), meta data (oe-core) and documentation.
+
+An OpenEmbedded build will create a custom Linux distribution to your exact specifications. You can tweak the build all the way down to patching the Kernel and setting the level of GCC optimisation.
+
+So, what is the Yocto Project if OpenEmbedded is the build system? The Yocto Project is a Linux Foundation project that provides a stable and well tested version of OpenEmbedded. It also provides a small layer of it's of own which houses the Poky distro configuration - a minimal distro specification with a well tested configuration of OpenEmbedded packages and features. It also provides extensive documentation which can be viewed here: [url=http://www.yoctoproject.org/documentation]http://www.yoctoproject.org/documentation[/url]. I highly recommend you browse through the documentation and get to know and understand some of the terminology of the OpenEmbedded ecosystem. 
+
+The Yocto Project helps tame OpenEmbedded to make it suitable for Beginners right through to Advanced users, however you will need some level of technical prowess and also a running Linux distribution, either in a virtual machine or natively on your PC.
+
+From here on I will assume that you are running a Linux distribution, have access to a terminal emulator (xterm, gnome-terminal etc..), the git source control management system installed and have ample free space and bandwidth. This process can consume as much as 50GB of space on your hard drive and take a whole day to compile!
+
+[b]Step 1: Some terms and context to understand[/b]
+
+[i]The Yocto Project:[/i] Provides OpenEmbedded (oe-core layer), Bitbake (build tool) and the meta-yocto layer at a stable and well tested version.
+
+[i]Metadata:[/i] files which contain information on how to build packages
+
+[i]Bitbake:[/i] Build and metadata manager, tells the system how to build packages, inspired by Gentoo's Portage tool.
+
+[i]Poky:[/i] A distribution with a well tested configuration of oc-core packages and features.
+
+[b]Step 2: Clone the Yocto Project Git repo[/b]
+
+We are going to download a beta version of the Yocto Project compilation which I have tested and is known to be working on the Pi. 
+
+First navigate to the directory you want to store your Yocto Project files and run the following command:
+
+[code]git clone git://git.yoctoproject.org/poky yoctoProject[/code]
+
+This will clone the master version of the yocto project collection.
+
+[code] git checkout 37c8597e7600385367257e8a513e003947ebef5b[/code]
+
+This checks out a revision that I have tested and I know to work. This is necessary as we are using code in active development.
+
+[b]Step 3: Get the meta-raspberrypi layer[/b]
+
+The meta-raspberrypi layer is a BSP layer, this is a layer which holds all the meta-data for building for the Raspberry Pi, most importantly the Kernel and architecture configuration. We're going to do a git clone of the meta-raspberrypi repository.
+
+cd into the yoctoProject directory
+
+[code]cd yoctoProject[/code]
+
+Clone the meta-raspberrypi repository
+
+[code]git clone https://github.com/djwillis/meta-raspberrypi.git[/code]
+
+Checkout to the same commit as I used in this post.
+
+[code]cd meta-raspberrypi[/code]
+
+[code]git checkout 9a846961784a0c84d411d3494b1d5bc13cc42e45 [/code]
+
+[b]Step 3: Setup the build environment[/b]
+
+Go back to your yoctoProject directory, if you are still in the meta-raspberrypi directory then a simple:
+
+[code]cd ..[/code]
+
+Will suffice.
+
+Next, setup the build environment variables by sourcing the build script:
+
+[code]source oe-init-build-env raspberryPiBuild/[/code]
+
+You have now setup the environment, a new folder 'raspberryPiBuild' has been automatically created and you have then been placed into it.
+
+[b]Step 4: Configure the build[/b]
+
+Now you have setup the environment, Bitbake can build for a number of architectures. You must configure it to build for the Raspberry Pi. Using your favourite text editor, edit the conf/local.conf file in your raspberryPiBuild directory.
+
+[code]nano conf/local.conf[/code]
+
+In the conf file edit the following parameters:
+
+If you have more than 1 CPU core uncomment (remove the hash character) BB_NUMBER_THREADS and change the "4" to the number of threads available on your CPU + 1.
+
+I have 8 threads on my PC, so I would change it to 9.
+
+[code]BB_NUMBER_THREADS = "9"[/code]
+
+Note: Make sure there is no empty space before the variable name.
+
+If you have more than 1 CPU core uncomment (remove the hash character) PARALLEL_MAKE and change the "-j 4" to the number of threads available on your CPU + 1.
+
+[code]PARALLEL_MAKE = "-j 9"[/code]
+
+Note: Make sure there is no empty space before the variable name.
+
+Next scroll down the file until you see the MACHINE definition variables. Add your own custom one right at the start that says:
+
+[code]MACHINE ?= "raspberrypi"[/code]
+
+Ensure that all the following MACHINE variables are commented out.
+
+Set the variable DISTRO to poky-raspberrypi
+
+[code]DISTRO ?= "poky-raspberrypi"[/code]
+
+Now save the file and we will continue onto compiling a pre-defined minimal distribution.
+
+[b]Step 5: Build a minimal distribution[/b]
+
+To compile your new distribution a few development tools are required, the install procedure for a few common Linux distributions are listed below. If you do not run one of these distributions then you can try running the bitbake command below anyway and it will alert you to which dependencies your system is missing and you can then install them with the package manager of your choice.
+
+Packages required for Ubuntu:
+
+[code]sudo apt-get install sed wget cvs subversion git-core coreutils \
+     unzip texi2html texinfo libsdl1.2-dev docbook-utils gawk \
+     python-pysqlite2 diffstat help2man make gcc build-essential \
+     g++ desktop-file-utils chrpath libgl1-mesa-dev libglu1-mesa-dev \
+     mercurial autoconf automake groff libtool xterm[/code]
+
+Packages required for Fedora:
+
+[code]sudo yum groupinstall "development tools"[/code]
+
+[code]sudo yum install python m4 make wget curl ftp hg tar bzip2 gzip \
+     unzip python-psyco perl texinfo texi2html diffstat openjade \
+     docbook-style-dsssl sed docbook-style-xsl docbook-dtds \
+     docbook-utils sed bc eglibc-devel ccache pcre pcre-devel quilt \
+     groff linuxdoc-tools patch linuxdoc-tools cmake help2man \
+     perl-ExtUtils-MakeMaker tcl-devel gettext chrpath ncurses apr \
+     SDL-devel mesa-libGL-devel mesa-libGLU-devel gnome-doc-utils \
+     autoconf automake libtool xterm[/code]
+
+Packages required for openSUSE:
+
+[code]sudo zypper install python gcc gcc-c++ libtool \
+     subversion git chrpath automake make wget help2man \
+     diffstat texinfo mercurial freeglut-devel libSDL-devel[/code]
+
+The meta-raspberrypi layer provides us with a very minimal image which will construct an image file that we can directly write onto our SD card.
+
+To build the image we run
+
+[code]bitbake rpi-basic-image[/code]
+
+Ensure, you are running this from your raspberryPiBuild directory.
+
+Now, depending on the speed of your machine this could take anything from 3 hours (Quad Core i7, 3GHz) to 24hrs+. 
+
+[b]Step 6: Running our new image[/b]
+
+Assuming the image built without an issues we can now copy the image to our SD card. The image is placed in the 'tmp/deploy/images' directory within your raspberryPiBuild directory.
+
+So, finally:
+
+[code]dd if=tmp/deploy/images/rpi-basic-image.sd-img of=/path/to/sd/card[/code]
+
+[b]Final Comments[/b]
+
+There are reams of documentation available and if you are truly interested in building a custom Linux distribution for your Pi I would suggest you start reading!
+
+[url=http://www.yoctoproject.org/documentation]http://www.yoctoproject.org/documentation[/url]
+
+There are a lot more packages available for OpenEmbedded but it is much wilder, so take a look if you wish to explore further and play with the bleeding edge!
+
+[url=http://en.wikipedia.org/wiki/OpenEmbedded]http://en.wikipedia.org/wiki/OpenEmbedded[/url]
+[url=http://www.openembedded.org]http://www.openembedded.org[/url]
+
+This guide covers only building a very basic system, there are a multitude of ways to expand the use of your new build through adding packages and image features. These will hopefully be covered at a later date, but are currently fully explained in the Yocto Project documentation if you wish to steam ahead!
+
