@@ -1,5 +1,3 @@
-Building a Custom Raspberry Pi Image using OpenEmbedded and Yocto
-
 You may have read my previous article where I talked about building a virtual image to run in qemu which was similar to the Raspberry Pi's architecture and allowed for basic development. In that I mentioned that hopefully support for the real raspberry pi hardware would eventually be included, and it now is!
 
 With the development of the Raspberry Pi hardware layer being spear headed by DJWillis ([url=http://www.distant-earth.com/wp/]http://www.distant-earth.com/wp/[/url]) and other generous members of the community, it is now possible to build a custom embedded image with full architecture support.
@@ -104,7 +102,30 @@ Set the variable DISTRO to poky-raspberrypi
 
 [code]DISTRO ?= "poky-raspberrypi"[/code]
 
-Now save the file and we will continue onto compiling a pre-defined minimal distribution.
+Finally, we need to hide some packages (recipes) from bitbake as they're not yet compatible with the meta-yocto/oe-core layers we are using. So add the following line right at the bottom of the file:
+
+[code]BBMASK = "meta-raspberrypi/recipes-multimedia/libav|meta-raspberrypi/recipes-core/systemd"[/code]
+
+Now save the file.
+
+Next up, we need to add the meta-rasperrypi layer we cloned earlier to the file conf/bblayers.conf. Open this file:
+
+[code]nano conf/bblayers.conf[/code]
+
+Add a line below the last entry in the BBLAYERS variable (it should end in meta-yocto) stating:
+
+[code]/path/to/meta-raspberrypi[/code]
+
+Please not the format of the other lines in the BBLAYERS variable, it will be very similar to the ones above but with the meta-raspberrypi instead of meta-*.
+
+You can see my example below:
+
+[code]BBLAYERS ?= " \
+  /home/jack/Projects/poky-rasp/meta \
+  /home/jack/Projects/poky-rasp/meta-yocto \
+  /home/jack/Projects/poky-rasp/meta-raspberrypi \
+  "
+[/code]
 
 [b]Step 5: Build a minimal distribution[/b]
 
@@ -155,6 +176,10 @@ So, finally:
 
 [code]dd if=tmp/deploy/images/rpi-basic-image.sd-img of=/path/to/sd/card[/code]
 
+This image will boot to a TTY and will also boot with DHCP enabled on the Ethernet port with the DropBear SSH server automatically started.
+
+To log in using the TTY or over SSH the username is root and password is blank (i.e. just press enter when asked for password).
+
 [b]Final Comments[/b]
 
 There are reams of documentation available and if you are truly interested in building a custom Linux distribution for your Pi I would suggest you start reading!
@@ -167,4 +192,3 @@ There are a lot more packages available for OpenEmbedded but it is much wilder, 
 [url=http://www.openembedded.org]http://www.openembedded.org[/url]
 
 This guide covers only building a very basic system, there are a multitude of ways to expand the use of your new build through adding packages and image features. These will hopefully be covered at a later date, but are currently fully explained in the Yocto Project documentation if you wish to steam ahead!
-
