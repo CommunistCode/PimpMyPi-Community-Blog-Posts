@@ -34,17 +34,16 @@ First navigate to the directory you want to store your Yocto Project files and r
 
 This will clone the master version of the yocto project collection.
 
-[code] git checkout 37c8597e7600385367257e8a513e003947ebef5b[/code]
+cd into the yoctoProject directory
+
+[code] cd yoctoProject[/code]
+[code] git checkout 4a36a32567ecfbc7ce7b967803e6e23314953ef5[/code]
 
 This checks out a revision that I have tested and I know to work. This is necessary as we are using code in active development.
 
 [b]Step 3: Get the meta-raspberrypi layer[/b]
 
 The meta-raspberrypi layer is a BSP layer, this is a layer which holds all the meta-data for building for the Raspberry Pi, most importantly the Kernel and architecture configuration. We're going to do a git clone of the meta-raspberrypi repository.
-
-cd into the yoctoProject directory
-
-[code]cd yoctoProject[/code]
 
 Clone the meta-raspberrypi repository
 
@@ -54,7 +53,7 @@ Checkout to the same commit as I used in this post.
 
 [code]cd meta-raspberrypi[/code]
 
-[code]git checkout 9a846961784a0c84d411d3494b1d5bc13cc42e45 [/code]
+[code]git checkout 305c5259e24eaa9fb285ca983dc4f9454743fa0c [/code]
 
 [b]Step 3: Setup the build environment[/b]
 
@@ -98,10 +97,6 @@ Next scroll down the file until you see the MACHINE definition variables. Add yo
 
 Ensure that all the following MACHINE variables are commented out.
 
-Set the variable DISTRO to poky-raspberrypi
-
-[code]DISTRO ?= "poky-raspberrypi"[/code]
-
 Finally, we need to hide some packages (recipes) from bitbake as they're not yet compatible with the meta-yocto/oe-core layers we are using. So add the following line right at the bottom of the file:
 
 [code]BBMASK = "meta-raspberrypi/recipes-multimedia/libav|meta-raspberrypi/recipes-core/systemd"[/code]
@@ -123,6 +118,7 @@ You can see my example below:
 [code]BBLAYERS ?= " \
   /home/jack/Projects/poky-rasp/meta \
   /home/jack/Projects/poky-rasp/meta-yocto \
+  /home/jack/Projects/poky-rasp/meta-yocto-bsp \
   /home/jack/Projects/poky-rasp/meta-raspberrypi \
   "
 [/code]
